@@ -95,7 +95,7 @@
     }
     list_bounty("0");
     </script>
-    <script>
+    <script language="javascript">
     const dapp = "login";
     let login_use = "";
     let wallet_userAccount="none";
