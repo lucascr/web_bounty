@@ -1,4 +1,76 @@
+const dapp = "bounty_dapp";
+let login_use = "";
+let wallet_userAccount="none";
 
+const wax = new waxjs.WaxJS({
+    rpcEndpoint: 'https://wax.greymass.com'
+});
+
+const transport = new AnchorLinkBrowserTransport();
+/* mainnet
+chains: [{
+chainId: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
+nodeUrl: 'https://wax.greymass.com',
+}]*/
+const anchorLink = new AnchorLink({
+      transport,
+    chains: [{
+        chainId: 'f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12',
+        nodeUrl: 'https://waxtestnet.greymass.com',
+    }]
+});
+function login_wax(anchor){
+  login_use=anchor;
+  if (anchor) {
+        login_anchor();
+  }else{
+    login_waxjs().then(function(retorno){
+        wallet_userAccount=retorno;
+        $("#autologin").html(wallet_userAccount);
+        hideLoginButton();
+    });        
+  }
+}
+function login_anchor(){
+    anchorLink.login(dapp).then((result) => {
+      console.log(result);
+      session = result.session;          
+      console.log(result.session);
+      wallet_userAccount=session.auth.actor;
+      console.log(session.auth.actor);
+      $("#autologin").html(String(wallet_userAccount).split("@")[0]);
+      hideLoginButton();
+    });
+}
+async function login_waxjs(){
+  try {
+    let userAccount = await wax.login();                
+    return userAccount;
+  } catch (e) {
+    $("#autologin").html(e.message);        
+  }
+  return false;
+}
+function logout(){
+  wallet_userAccount="";
+  if(login_use){
+    //anchorLink.logout();
+    session.remove();        
+    $("#autologin").html("logout");
+  }else{
+    wax.logout();
+    $("#autologin").html("logout");
+  }
+    $("#divlogin").show();
+    $("#divlogout").hide();
+}
+function hideLoginButton() {
+  $("#divlogin").hide();
+  $("#divlogout").show();
+}
+function loadMenu(){
+  $("#divlists").html("");
+}
 const contract = "bounty";
 const account = "bounty";
 
@@ -51,79 +123,6 @@ function statusToString(status){
     default:          return "Unknown";          break;
   }
 }
+
+
 list_bounty("0");
-
-const dapp = "login";
-let login_use = "";
-let wallet_userAccount="none";
-
-const wax = new waxjs.WaxJS({
-    rpcEndpoint: 'https://wax.greymass.com'
-});
-
-const transport = new AnchorLinkBrowserTransport();
-/* mainnet
-chains: [{
-chainId: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
-nodeUrl: 'https://wax.greymass.com',
-}]*/
-const anchorLink = new AnchorLink({
-      transport,
-chains: [{
-chainId: 'f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12',
-nodeUrl: 'https://waxtestnet.greymass.com',
-}]
-});
-function login_wax(anchor){
-  login_use=anchor;
-  if (anchor) {
-    login_anchor();
-  }else{
-    login_waxjs().then(function(retorno){
-      wallet_userAccount=retorno;
-      $("#autologin").html(wallet_userAccount);
-      hideLoginButton();
-    });        
-  }
-}
-function login_anchor(){
-    anchorLink.login(dapp).then((result) => {
-      console.log(result);
-      session = result.session;          
-      console.log(result.session);
-      wallet_userAccount=session.auth.actor;
-      console.log(session.auth.actor);
-      $("#autologin").html(String(wallet_userAccount).split("@")[0]);
-      hideLoginButton();
-    });
-}
-async function login_waxjs(){
-  try {
-    let userAccount = await wax.login();                
-    return userAccount;
-  } catch (e) {
-    $("#autologin").html(e.message);        
-  }
-  return false;
-}
-function logout(){
-  wallet_userAccount="";
-  if(login_use){
-    //anchorLink.logout();
-    session.remove();        
-    $("#autologin").html("logout");
-  }else{
-    wax.logout();
-    $("#autologin").html("logout");
-  }
-    $("#divlogin").show();
-    $("#divlogout").hide();
-}
-function hideLoginButton() {
-  $("#divlogin").hide();
-  $("#divlogout").show();
-  loadMenu();
-}
-function loadMenu(){
-  $("#divlists").html("");
-}
