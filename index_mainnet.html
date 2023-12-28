@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="application/wasm; charset=utf-8">
+        <title>Admin</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="jquery-3.7.1.min.js"></script>
+        <script src="waxjs.js"></script>
+        <script src="https://unpkg.com/anchor-link@3"></script>
+        <script src="https://unpkg.com/anchor-link-browser-transport@3"></script>
+        <link rel="stylesheet" href="menu.css">
+        <script src="functions.js"></script>
+</head>
+<body>
+    <p id="autologin"></p>
+    <div id="divlogin">
+      <button id="login" onclick=login_wax(false)>WAX Login</button>
+      <button id="login" onclick=login_wax(true)>Anchor Login</button>
+    </div>
+    <div id="divlogout" style="display:none"><button id="loginout" onclick=logout()>Logout</button></div>
+    <div id="divlists">
+      <section>
+      <div class="navbar">
+        <div class="subnav">
+        <button class="subnavbtn">Bounty <i class="fa fa-caret-down"></i></button>
+          <div class="subnav-content">
+            <a href="#link1">Add Bounty</a>
+            <a href="#list_bounty" id="list_bounty" onclick="list_bounty();">List Bounty</a>
+          </div>
+        </div>
+        <div class="subnav">
+        <button class="subnavbtn">Admin <i class="fa fa-caret-down"></i></button>
+          <div class="subnav-content">
+            <a href="#company">Add Aproover</a>
+            <a href="#team">Remove Aprover</a>
+          </div>
+        </div>
+      </div>
+      </section>
+      <div id="divlists_table"></div>
+    </div>
+  </body>
+</html>
