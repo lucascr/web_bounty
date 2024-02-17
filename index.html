@@ -61,7 +61,7 @@
     }    
     function getBountySelector(){
         $("#divlists_menu").html("");
-        $("#divlists_menu").append("<select id='select_bounty' onChange='list_bounty(this.value);' class='subselect'><option value='0'>-Select-</option><option value='1' selected>New</option><option value='2'>Claimed</option><option value='3'>Approved</option><option value='4'>For Review</option><option value='5'>Reviewed</option><option value='6'>Finished</option><option value='7'>Cancelled</option><option value='0'>All</option></select>");
+        $("#divlists_menu").append("<select id='select_bounty' onChange='list_bounty(this.value);' class='subselect'><option value='0'>-Select-</option><option value='1' selected>New</option><option value='2'>Claimed</option><option value='3'>Approved</option><option value='4'>Completed</option><option value='5'>Reviewed</option><option value='6'>Finished</option><option value='7'>Cancelled</option><option value='0'>All</option></select>");
     }
     function getText(){
       $("#divlists_menu").append("<label for='site-search'>Sub-Category:</label><input type='text' id='fname' name='fname'>");
@@ -86,10 +86,9 @@
       var cat = urlParams.get("cat");
 
       if(subcat!=null){        
-        sel_status=sha256(subcat);
-        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"10","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":100});
-      }else if(cat!=null){
-        
+        sel_status=sha256(sel_status + " " + subcat);
+        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"13","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":100});
+      }else if(cat!=null){        
         sel_status=sha256(cat);
         jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"9","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":100});
       }else{
@@ -122,7 +121,7 @@
         case 1:          return "New Bounty, Not Claimed";          break;
         case 2:          return "Claimed (Set by Player)";          break;
         case 3:          return "Approved (Set by Admin)";          break;
-        case 4:          return "For Review (Set by Player)";          break;
+        case 4:          return "Completed (Set by Player)";          break;
         case 5:          return "Reviewed (Set by Admin)";          break;
         case 6:          return "Finished (payed)";          break;
         case 7:          return "Cancelled";          break;        
