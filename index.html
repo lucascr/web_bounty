@@ -108,7 +108,7 @@
           console.log(data.rows);
           $.each(data.rows, function (index, value) {
               console.log(value);
-              $("#table_bounty tbody").append("<tr><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td><a href='#bounty_detail' onclick='bounty_detail(\""+value.id+"\");'>Detail</a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+              $("#table_bounty tbody").append("<tr><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' onclick='bounty_detail(\""+value.id+"\");'>Detail</a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
           });
         },
         error: function (data) {
@@ -136,7 +136,7 @@
     let login_use = "";
     let wallet_userAccount="none";
 
-    const wax = new waxjs.WaxJS({
+    const wax = new waxjs.WaxJS({z
         rpcEndpoint: 'https://wax.greymass.com'
     });
     
