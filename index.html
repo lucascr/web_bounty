@@ -97,9 +97,9 @@
         }else{ //NEW
           jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"2","key_type":"i64","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
         }
-      }        
-        
-            $.ajax({
+      }
+      
+          $.ajax({
         type: "POST",
         url: waxApiUrl+"v1/chain/get_table_rows",        
         data: jsonData,
