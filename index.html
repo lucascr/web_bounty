@@ -21,14 +21,254 @@
 
   gtag('config', 'G-WCMYG5989D');
 </script>
+
+<script language="javascript">
+  const contract = "bounty";
+  const account = "bounty";
+
+  $(document).ready(function() {
+    load_menu();
+    list_bounty("1"); 
+  });
+
+  function load_menu(){
+    getBountySelector();
+    getText();
+  }    
+  function getBountySelector(){
+      $("#divlists_menu").html("");
+      $("#divlists_menu").append("<select id='select_bounty' onChange='list_bounty(this.value);' class='subselect'><option value='0'>-Select-</option><option value='1' selected>New</option><option value='2'>Claimed</option><option value='3'>Approved</option><option value='4'>Completed</option><option value='5'>Reviewed</option><option value='6'>Finished</option><option value='7'>Cancelled</option><option value='0'>All</option></select>");
+  }
+  function getText(){
+    $("#divlists_menu").append("    <label for='site-search'>Project:</label><input type='text' id='f_project' name='f_project'>    <label for='site-search'>Category:</label><input type='text' id='f_cat' name='f_cat'>    <label for='site-search'>Sub-Category:</label><input type='text' id='f_subcat' name='f_subcat'>    ");
+  }
+
+  function list_bounty(sel_status){
+      getBountyTableHeader();
+      getBountyTableData(sel_status);
+  }
+  function getBountyTableHeader(){
+      $("#divlists_table").html("");
+      $("#divlists_table").append("<table id='table_bounty' class='table_bounty'><thead><tr><th>ID</th><th>Task</th><th>Criteria</th><th>Reward</th><th>Player</th><th>Options</th><th>status</th></tr></thead><tbody></tbody></table>");        
+  }
+  function getBountyTableData (sel_status){
+    
+    // v1/chain/get_table_rows
+    // {"json":true,"code":"bounty","scope":"bounty","table":"bounty","limit":100}
+    waxApiUrl ="https://wax.eosphere.io/";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    var subcat = urlParams.get("subcat");
+    var cat = urlParams.get("cat");
+
+    if(subcat!=null){        
+      sel_status=sha256(sel_status + " " + subcat);
+      jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"13","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+    }else if(cat!=null){        
+      sel_status=sha256(cat);
+      jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"9","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+    }else{
+      if(sel_status=="0"){ //ALL
+        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","limit":1000});
+      }else{ //NEW
+        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"2","key_type":"i64","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+      }
+    }
+    var hidden_bounties=0;
+        $.ajax({
+      type: "POST",
+      url: waxApiUrl+"v1/chain/get_table_rows",        
+      data: jsonData,
+      dataType: "json",
+      success: function (data) {
+        console.log(data.rows);
+        $.each(data.rows, function (index, value) {
+            if(wallet_userAccount!="none"){
+              if(value.player==wallet_userAccount || value.player==""){
+                $("#table_bounty tbody").append("<tr><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+              }else{
+                hidden_bounties++;
+              }
+            }else{
+              console.log(value);
+              $("#table_bounty tbody").append("<tr><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+            }
+        });
+        if(hidden_bounties>0){
+          $("#table_bounty tbody").append("<tr><td colspan='7'>Hidden bounties: "+hidden_bounties+"</td></tr>");
+        }
+      },
+      error: function (data) {
+        console.log(data);
+      },
+      complete: function (data) {
+        loadOptionsLoggedUser();
+      }
+    });
+  }
+  function btnToString(status){
+    switch (parseInt(status)) {
+      case 1:          return "Claim";          break;
+      case 2:          return "Approve";          break;
+      case 3:          return "Completed";          break;
+      case 4:          return "Reviewed";          break;
+      case 5:          return "Rewarded";          break;
+      case 6:          return "Done";              break;
+      case 7:          return "Cancelled";          break;
+      default:          return "Unknown";          break;
+    }
+  }
+  function statusToString(status){
+    switch (parseInt(status)) {
+      case 1:          return "New Bounty, Not Claimed";          break;
+      case 2:          return "Claimed ";          break;
+      case 3:          return "Approved ";          break;
+      case 4:          return "Completed ";          break;
+      case 5:          return "Reviewed ";          break;
+      case 6:          return "Finished";          break;
+      case 7:          return "Cancelled";          break;
+      default:          return "Unknown";          break;
+    }
+  }
+  
+  
+  const dapp = "login";
+  let login_use = "";
+  let wallet_userAccount="none";
+
+  const wax = new waxjs.WaxJS({
+      rpcEndpoint: 'https://wax.greymass.com'
+  });
+  
+  const transport = new AnchorLinkBrowserTransport();
+  const anchorLink = new AnchorLink({
+        transport,
+        chains: [{
+chainId: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
+nodeUrl: 'https://wax.greymass.com',
+
+}]
+});
+  function loginWax(anchor){
+    login_use=anchor;
+    if (anchor) {
+      login_anchor();
+    }else{
+      login_waxjs().then(function(retorno){
+        wallet_userAccount=retorno;
+        $("#autologin").html(wallet_userAccount);
+        hideLoginButton();
+      });        
+    }
+  }
+  function login_anchor(){
+      anchorLink.login(dapp).then((result) => {
+        console.log(result);
+        session = result.session;          
+        console.log(result.session);
+        wallet_userAccount=session.auth.actor;
+        console.log(session.auth.actor);
+        $("#autologin").html(String(wallet_userAccount).split("@")[0]);
+        hideLoginButton();
+      });
+  }
+  async function login_waxjs(){
+    try {
+      let userAccount = await wax.login();
+      return userAccount;
+    } catch (e) {
+      $("#autologin").html(e.message);        
+    }
+    return false;
+  }
+  function logout(){
+    wallet_userAccount="none";
+    if(login_use){
+      //anchorLink.logout();
+      session.remove();        
+      $("#autologin").html("logout");
+    }else{
+      wax.logout();
+      $("#autologin").html("logout");
+    }
+      $("#divlogin").show();
+      $("#divlogout").hide();
+  }
+  function hideLoginButton() {
+    $("#divlogin").hide();
+    $("#divlogout").show();
+    list_bounty($("#select_bounty").val());
+    //loadOptionsLoggedUser();
+  }
+  
+  function loadOptionsLoggedUser(){    
+    console.log("Log: loadOptionsLoggedUse");
+    console.log("Log: wallet_userAccount: "+wallet_userAccount);    
+    if(wallet_userAccount!="none"){
+      $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_1").html("Claim");
+      $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_3").html("Complete");
+      //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
+    }
+    //$("#divlists").html("");
+  }
+  function bounty_detail(state_id,bounty_id){
+    console.log("bounty_detail: "+bounty_id);
+    if(state_id=="1"){
+      sign('claimbounty',bounty_id);
+    }
+  }
+  
+  async function sign(state_str,bounty_id) {
+    if (login_use) {
+      //wallet_userAccount.toString();
+    }else{
+      if(!wax.api) {
+          alert('* Login first *');
+      }
+      try {
+        this.waitingResults = true;
+        const results = await wax.api.transact({
+            actions: [
+                {
+                  account: 'bountiesgame',
+                  name: state_str,
+                  authorization: [
+                    {
+                      actor: wallet_userAccount.toString(),
+                      permission: 'active',
+                    },
+                  ],
+                  data: {
+                    bounty_id: bounty_id, //Bounty ID
+                    player: wallet_userAccount.toString(), //User
+                  },
+                },
+              ],
+            },
+            {
+              blocksBehind: 3,
+              expireSeconds: 30,
+            },
+          );
+
+
+      } catch (error) {
+        console.error(error);
+        this.error = error.message;
+        alert(error.message);
+      }
+
+    }
+  }
+  </script>
 </head>
 <body>
-    <p id="autologin"></p>
-    <div id="divlogin">
-      <button id="login" onclick=login_wax(false)>WAX Login</button>
-      <button id="login" onclick=login_wax(true)>Anchor Login</button>
-    </div>
-    <div id="divlogout" style="display:none"><button id="loginout" onclick=logout()>Logout</button></div>
+      <p id="autologin"></p>
+      <div id="divlogin">
+        <button id="login" onclick="loginWax(false)">WAX Login</button>
+        <button id="login" onclick="loginWax(true)">Anchor Login</button>
+      </div>
+      <div id="divlogout" style="display:none"><button id="loginout" onclick=logout()>Logout</button></div>
 
     <div id="divlists">
       <section>
@@ -52,156 +292,5 @@
       <div id="divlists_menu"></div>
       <div id="divlists_table"></div>
     </div>
-    <script language="javascript">
-    const contract = "bounty";
-    const account = "bounty";
-    function load_menu(){
-      getBountySelector();
-      getText();
-    }    
-    function getBountySelector(){
-        $("#divlists_menu").html("");
-        $("#divlists_menu").append("<select id='select_bounty' onChange='list_bounty(this.value);' class='subselect'><option value='0'>-Select-</option><option value='1' selected>New</option><option value='2'>Claimed</option><option value='3'>Approved</option><option value='4'>Completed</option><option value='5'>Reviewed</option><option value='6'>Finished</option><option value='7'>Cancelled</option><option value='0'>All</option></select>");
-    }
-    function getText(){
-      $("#divlists_menu").append("<label for='site-search'>Sub-Category:</label><input type='text' id='fname' name='fname'>");
-    }
-
-    function list_bounty(sel_status){
-        getBountyTableHeader();
-        getBountyTableData(sel_status);
-    }
-    function getBountyTableHeader(){
-        $("#divlists_table").html("");
-        $("#divlists_table").append("<table id='table_bounty' class='table_bounty'><thead><tr><th>ID</th><th>Task</th><th>Criteria</th><th>Reward</th><th>Player</th><th>Options</th><th>status</th></tr></thead><tbody></tbody></table>");        
-    }
-    function getBountyTableData (sel_status){
-      
-      // v1/chain/get_table_rows
-      // {"json":true,"code":"bounty","scope":"bounty","table":"bounty","limit":100}
-      waxApiUrl ="https://wax.eosphere.io/";
-
-      const urlParams = new URLSearchParams(window.location.search);
-      var subcat = urlParams.get("subcat");
-      var cat = urlParams.get("cat");
-
-      if(subcat!=null){        
-        sel_status=sha256(sel_status + " " + subcat);
-        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"13","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
-      }else if(cat!=null){        
-        sel_status=sha256(cat);
-        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"9","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
-      }else{
-        if(sel_status=="0"){ //ALL
-          jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","limit":1000});
-        }else{ //NEW
-          jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"2","key_type":"i64","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
-        }
-      }
-      
-          $.ajax({
-        type: "POST",
-        url: waxApiUrl+"v1/chain/get_table_rows",        
-        data: jsonData,
-        dataType: "json",
-        success: function (data) {
-          console.log(data.rows);
-          $.each(data.rows, function (index, value) {
-              console.log(value);
-              $("#table_bounty tbody").append("<tr><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' onclick='bounty_detail(\""+value.id+"\");'>Detail</a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
-          });
-        },
-        error: function (data) {
-          console.log(data);
-        }
-      });
-    }
-    function statusToString(status){
-      switch (parseInt(status)) {
-        case 1:          return "New Bounty, Not Claimed";          break;
-        case 2:          return "Claimed ";          break;
-        case 3:          return "Approved ";          break;
-        case 4:          return "Completed ";          break;
-        case 5:          return "Reviewed ";          break;
-        case 6:          return "Finished";          break;
-        case 7:          return "Cancelled";          break;
-        default:          return "Unknown";          break;
-      }
-    }
-    load_menu();
-    list_bounty("1");
-    </script>
-    <script>
-    const dapp = "login";
-    let login_use = "";
-    let wallet_userAccount="none";
-
-    const wax = new waxjs.WaxJS({z
-        rpcEndpoint: 'https://wax.greymass.com'
-    });
-    
-    const transport = new AnchorLinkBrowserTransport();
-    const anchorLink = new AnchorLink({
-          transport,
-          chains: [{
-  chainId: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
-  nodeUrl: 'https://wax.greymass.com',
-  
-}]
-});
-    function login_wax(anchor){
-      login_use=anchor;
-      if (anchor) {
-        login_anchor();
-      }else{
-        login_waxjs().then(function(retorno){
-          wallet_userAccount=retorno;
-          $("#autologin").html(wallet_userAccount);
-          hideLoginButton();
-        });        
-      }
-    }
-    function login_anchor(){
-        anchorLink.login(dapp).then((result) => {
-          console.log(result);
-          session = result.session;          
-          console.log(result.session);
-          wallet_userAccount=session.auth.actor;
-          console.log(session.auth.actor);
-          $("#autologin").html(String(wallet_userAccount).split("@")[0]);
-          hideLoginButton();
-        });
-    }
-    async function login_waxjs(){
-      try {
-        let userAccount = await wax.login();                
-        return userAccount;
-      } catch (e) {
-        $("#autologin").html(e.message);        
-      }
-      return false;
-    }
-    function logout(){
-      wallet_userAccount="";
-      if(login_use){
-        //anchorLink.logout();
-        session.remove();        
-        $("#autologin").html("logout");
-      }else{
-        wax.logout();
-        $("#autologin").html("logout");
-      }
-        $("#divlogin").show();
-        $("#divlogout").hide();
-    }
-    function hideLoginButton() {
-      $("#divlogin").hide();
-      $("#divlogout").show();
-      loadMenu();
-    }
-    function loadMenu(){
-      $("#divlists").html("");
-    }
-    </script>
     </body>
     </html>
