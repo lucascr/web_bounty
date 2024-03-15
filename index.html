@@ -322,7 +322,12 @@
               expireSeconds: 30,
             },
           );
-
+            
+          $(".tr_bounty_id_"+bounty_id).css("background-color", "lightgreen")
+          var myNotification = notif({
+            'type': 'success',
+            'msg': 'TX Processed: ' +result.processed.id + ' <a href="https://waxblock.io/transaction/' +result.processed.id + '" target="_blank">Open TX</a>'
+          })
 
       } catch (error) {
         console.error(error);
