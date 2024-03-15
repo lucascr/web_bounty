@@ -11,6 +11,8 @@
         <script src="sha256.js"></script>
         <script src="https://unpkg.com/anchor-link@3"></script>
         <script src="https://unpkg.com/anchor-link-browser-transport@3"></script>
+        <link rel="stylesheet" href="notifit.min.css">
+        <script src="notifit.min.js"></script>
         <link rel="stylesheet" href="menu.css">
         <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-WCMYG5989D"></script>
@@ -40,7 +42,7 @@
       $("#divlists_menu").append("<select id='select_bounty' onChange='list_bounty(this.value);' class='subselect'><option value='0'>-Select-</option><option value='1' selected>New</option><option value='2'>Claimed</option><option value='3'>Approved</option><option value='4'>Completed</option><option value='5'>Reviewed</option><option value='6'>Finished</option><option value='7'>Cancelled</option><option value='0'>All</option></select>");
   }
   function getText(){
-    $("#divlists_menu").append("    <label for='site-search'>Project:</label><input type='text' id='f_project' name='f_project'>    <label for='site-search'>Category:</label><input type='text' id='f_cat' name='f_cat'>    <label for='site-search'>Sub-Category:</label><input type='text' id='f_subcat' name='f_subcat'>    ");
+    $("#divlists_menu").append("    <label for='site-search'>Project:</label><input type='text' id='f_project' name='f_project'>    <label for='site-search'>Category:</label><input type='text' id='f_cat' name='f_cat'>    <label for='site-search'>Sub-Category:</label><input type='text' id='f_subcat' name='f_subcat'> - Show all <input  type='checkbox' id='show_all' name='show_all'>");
   }
 
   function list_bounty(sel_status){
@@ -74,6 +76,7 @@
         jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"2","key_type":"i64","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
       }
     }
+    
     var hidden_bounties=0;
         $.ajax({
       type: "POST",
@@ -83,15 +86,16 @@
       success: function (data) {
         console.log(data.rows);
         $.each(data.rows, function (index, value) {
-            if(wallet_userAccount!="none"){
-              if(value.player==wallet_userAccount || value.player==""){
-                $("#table_bounty tbody").append("<tr><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+            if(wallet_userAccount!="none" && !$("#show_all").is(":checked") ){
+              
+              if( value.player==wallet_userAccount || value.player=="" ){
+                $("#table_bounty tbody").append("<tr class='tr_bounty_id_"+value.bounty_id+"'><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_id_"+value.state_bounty+" bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
               }else{
                 hidden_bounties++;
               }
             }else{
               console.log(value);
-              $("#table_bounty tbody").append("<tr><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+              $("#table_bounty tbody").append("<tr class='tr_bounty_id_"+value.bounty_id+"'><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_id_"+value.state_bounty+" bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
             }
         });
         if(hidden_bounties>0){
@@ -135,6 +139,7 @@
   const dapp = "login";
   let login_use = "";
   let wallet_userAccount="none";
+  let wallet_session=null;
 
   const wax = new waxjs.WaxJS({
       rpcEndpoint: 'https://wax.greymass.com'
@@ -144,11 +149,10 @@
   const anchorLink = new AnchorLink({
         transport,
         chains: [{
-chainId: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
-nodeUrl: 'https://wax.greymass.com',
-
-}]
-});
+          chainId: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
+          nodeUrl: 'https://wax.greymass.com',
+        }]
+  });
   function loginWax(anchor){
     login_use=anchor;
     if (anchor) {
@@ -158,16 +162,17 @@ nodeUrl: 'https://wax.greymass.com',
         wallet_userAccount=retorno;
         $("#autologin").html(wallet_userAccount);
         hideLoginButton();
+        wallet_session=wax.api;
       });        
     }
   }
   function login_anchor(){
       anchorLink.login(dapp).then((result) => {
         console.log(result);
-        session = result.session;          
+        wallet_session = result.session;          
         console.log(result.session);
-        wallet_userAccount=session.auth.actor;
-        console.log(session.auth.actor);
+        wallet_userAccount=wallet_session.auth.actor;
+        console.log(wallet_session.auth.actor);
         $("#autologin").html(String(wallet_userAccount).split("@")[0]);
         hideLoginButton();
       });
@@ -201,26 +206,93 @@ nodeUrl: 'https://wax.greymass.com',
     //loadOptionsLoggedUser();
   }
   
-  function loadOptionsLoggedUser(){    
+  function loadOptionsLoggedUser(){
+    
+    if (login_use) {
+      wallet_userAccount_str=wallet_userAccount.toString()
+    }else{
+      wallet_userAccount_str=wallet_userAccount;
+    }
+
     console.log("Log: loadOptionsLoggedUse");
-    console.log("Log: wallet_userAccount: "+wallet_userAccount);    
-    if(wallet_userAccount!="none"){
+    console.log("Log: wallet_userAccount: "+wallet_userAccount_str);
+
+    if(wallet_userAccount_str!="none"){
+      console.log("Log: none");
+     if( $("#show_all").is(":checked") ){
+      console.log("Log: true");
+        $(".bounty_detail_id_2").html("Approve");
+        $(".bounty_detail_id_4").html("Review");
+        //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
+      }      
       $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_1").html("Claim");
       $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_3").html("Complete");
       //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
     }
     //$("#divlists").html("");
   }
+
   function bounty_detail(state_id,bounty_id){
     console.log("bounty_detail: "+bounty_id);
     if(state_id=="1"){
-      sign('claimbounty',bounty_id);
+      sign('claimbounty',1,bounty_id);
+    }else if(state_id=="2"){
+      sign('approveclaim',2,bounty_id);
+    }else if(state_id=="3"){
+      sign('completed',1,bounty_id);
+    }else if(state_id=="4"){
+      sign('review',2,bounty_id);
+    }else if(state_id=="5"){
+      sign('paybounty',2,bounty_id);
     }
   }
   
-  async function sign(state_str,bounty_id) {
+  async function sign(state_str,user_type,bounty_id) {
     if (login_use) {
       //wallet_userAccount.toString();
+      try {
+        const action = {
+          account: 'bountiesgame',
+          name: state_str,
+          authorization: [{
+              actor: String(wallet_session.auth.toString()).split("@")[0],
+              permission: String(wallet_session.auth.toString()).split("@")[1]
+          }],
+          data: {
+                bounty_id: bounty_id,
+          }
+        };
+
+        if (user_type === 2) {
+          action.data.approver = String(wallet_session.auth.toString()).split("@")[0];
+        } else {
+          action.data.player = String(wallet_session.auth.toString()).split("@")[0];
+        }
+
+        console.log(action);
+            //var result = await anchorLink.transact( { actions: action });
+            
+        anchorLink.transact({action})
+              .then((result) => {
+                  console.log(`<h1>Thank you ${ result.signer.actor }!</h1>`);
+                  //alert("TX: "+ result.processed.id);
+                  $(".tr_bounty_id_"+bounty_id).css("background-color", "lightgreen")
+                  var myNotification = notif({
+                    'type': 'success',
+                    'msg': 'TX Processed: ' +result.processed.id + ' <a href="https://waxblock.io/transaction/' +result.processed.id + '" target="_blank">Open TX</a>'
+                  })
+
+              })
+
+            //return {transaction_id: result.processed.id};
+
+        } catch(e) {
+            if (e.hasOwnProperty("error") && e.error.hasOwnProperty("details") && Array.isArray(e.error.details) && e.error.details.length > 0) {
+                throw ({message: e.error.details[0].message});
+            } else {
+                throw ({message: e.message});
+            }
+        }
     }else{
       if(!wax.api) {
           alert('* Login first *');
