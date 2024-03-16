@@ -78,6 +78,7 @@
     }
     
     var hidden_bounties=0;
+    var last_task_id="";
         $.ajax({
       type: "POST",
       url: waxApiUrl+"v1/chain/get_table_rows",        
@@ -86,10 +87,21 @@
       success: function (data) {
         console.log(data.rows);
         $.each(data.rows, function (index, value) {
-            if(wallet_userAccount!="none" && !$("#show_all").is(":checked") ){
-              
-              if( value.player==wallet_userAccount || value.player=="" ){
-                $("#table_bounty tbody").append("<tr class='tr_bounty_id_"+value.bounty_id+"'><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_id_"+value.state_bounty+" bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+            if(wallet_userAccount!="none" && !$("#show_all").is(":checked") ){              
+              if( value.player==wallet_userAccount || value.player=="" ){                
+                if(last_task_id!=value.task_id || value.task_id==""){
+                  last_task_id=value.task_id;
+                  if( value.task_id!=""){
+                    task_id_str="#"+value.task_id+" - ";
+                  }else{
+                    task_id_str="";
+                  }
+                  
+                  $("#table_bounty tbody").append("<tr class='tr_bounty_id_"+value.bounty_id+"'><td>"+value.bounty_id+"</td><td>"+task_id_str+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_id_"+value.state_bounty+" bounty_detail_task_id bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+                }else{
+                  hidden_bounties++;
+                }
+                
               }else{
                 hidden_bounties++;
               }
@@ -218,13 +230,14 @@
     console.log("Log: wallet_userAccount: "+wallet_userAccount_str);
 
     if(wallet_userAccount_str!="none"){
-      console.log("Log: none");
-     if( $("#show_all").is(":checked") ){
-      console.log("Log: true");
+      console.log("Log: !none");
+      if( $("#show_all").is(":checked") ){
+        console.log("Log: true");
         $(".bounty_detail_id_2").html("Approve");
         $(".bounty_detail_id_4").html("Review");
         //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
-      }      
+      }
+      $(".bounty_detail_task_id").html("Claim");      
       $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_1").html("Claim");
       $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_3").html("Complete");
       //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
