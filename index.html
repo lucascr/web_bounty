@@ -79,7 +79,7 @@
     
     var hidden_bounties=0;
     var last_task_id="";
-    
+
         $.ajax({
       type: "POST",
       url: waxApiUrl+"v1/chain/get_table_rows",        
@@ -236,6 +236,7 @@
         console.log("Log: true");
         $(".bounty_detail_id_2").html("Approve");
         $(".bounty_detail_id_4").html("Review");
+        $(".bounty_detail_id_5").html("Reward");
         //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
       }
       $(".bounty_detail_task_id").html("Claim");      
@@ -260,7 +261,7 @@
       sign('paybounty',2,bounty_id);
     }
   }
-  
+
   async function sign(state_str,user_type,bounty_id) {
     if (login_use) {
       //wallet_userAccount.toString();
@@ -279,12 +280,13 @@
 
         if (user_type === 2) {
           action.data.approver = String(wallet_session.auth.toString()).split("@")[0];
+        }else if (user_type === 5) {
+          action.data.issuer = String(wallet_session.auth.toString()).split("@")[0];          
         } else {
           action.data.player = String(wallet_session.auth.toString()).split("@")[0];
         }
 
         console.log(action);
-            //var result = await anchorLink.transact( { actions: action });
             
         anchorLink.transact({action})
               .then((result) => {
