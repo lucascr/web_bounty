@@ -250,19 +250,19 @@
   function bounty_detail(state_id,bounty_id){
     console.log("bounty_detail: "+bounty_id);
     if(state_id=="1"){
-      sign('claimbounty',1,bounty_id);
+      sign('claimbounty',1,bounty_id,state_id);
     }else if(state_id=="2"){
-      sign('approveclaim',2,bounty_id);
+      sign('approveclaim',2,bounty_id,state_id);
     }else if(state_id=="3"){
-      sign('completed',1,bounty_id);
+      sign('completed',1,bounty_id,state_id);
     }else if(state_id=="4"){
-      sign('review',2,bounty_id);
+      sign('review',2,bounty_id,state_id);
     }else if(state_id=="5"){
-      sign('paybounty',2,bounty_id);
+      sign('paybounty',3,bounty_id,state_id);
     }
   }
 
-  async function sign(state_str,user_type,bounty_id) {
+  async function sign(state_str,user_type,bounty_id,state_id) {
     if (login_use) {
       //wallet_userAccount.toString();
       try {
@@ -280,7 +280,7 @@
 
         if (user_type === 2) {
           action.data.approver = String(wallet_session.auth.toString()).split("@")[0];
-        }else if (user_type === 5) {
+        }else if (user_type === 3) {
           action.data.issuer = String(wallet_session.auth.toString()).split("@")[0];          
         } else {
           action.data.player = String(wallet_session.auth.toString()).split("@")[0];
