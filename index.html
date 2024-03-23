@@ -4,7 +4,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="Content-Type" content="application/wasm; charset=utf-8">
-        <title>Admin</title>
+        <title>Admin v.1.0.2 </title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <script src="jquery-3.7.1.min.js"></script>
         <script src="waxjs.js"></script>
@@ -86,7 +86,7 @@
       data: jsonData,
       dataType: "json",
       success: function (data) {
-        console.log(data.rows);
+        //console.log(data.rows);
         $.each(data.rows, function (index, value) {
             if(wallet_userAccount!="none" && !$("#show_all").is(":checked") ){              
               if( value.player==wallet_userAccount || value.player=="" ){                
@@ -107,7 +107,7 @@
                 hidden_bounties++;
               }
             }else{
-              console.log(value);
+              //console.log(value);
               $("#table_bounty tbody").append("<tr class='tr_bounty_id_"+value.bounty_id+"'><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_id_"+value.state_bounty+" bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
             }
         });
@@ -232,6 +232,9 @@
 
     if(wallet_userAccount_str!="none"){
       console.log("Log: !none");
+
+      $(".bounty_detail_task_id").html("Claim");
+
       if( $("#show_all").is(":checked") ){
         console.log("Log: true");
         $(".bounty_detail_id_2").html("Approve");
@@ -239,7 +242,6 @@
         $(".bounty_detail_id_5").html("Reward");
         //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
       }
-      $(".bounty_detail_task_id").html("Claim");      
       $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_1").html("Claim");
       $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_3").html("Complete");
       //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
@@ -286,7 +288,7 @@
           action.data.player = String(wallet_session.auth.toString()).split("@")[0];
         }
 
-        console.log(action);
+        //console.log(action);
             
         anchorLink.transact({action})
               .then((result) => {
@@ -315,29 +317,41 @@
       }
       try {
         this.waitingResults = true;
-        const results = await wax.api.transact({
-            actions: [
+        
+        
+        const actionp = {
+            bounty_id: bounty_id, //Bounty ID               
+          }
+        if (user_type === 2) {
+            actionp.approver = String(wallet_userAccount.toString()).split("@")[0];
+          }else if (user_type === 3) {
+            actionp.issuer = String(wallet_userAccount.toString()).split("@")[0];          
+          } else {
+            actionp.player = String(wallet_userAccount.toString()).split("@")[0];
+          }
+
+          //console.log(actionp);
+          
+          const results = await wax.api.transact({
+            actions: [{
+              account: 'bountiesgame',
+              name: state_str,
+              authorization: [
                 {
-                  account: 'bountiesgame',
-                  name: state_str,
-                  authorization: [
-                    {
-                      actor: wallet_userAccount.toString(),
-                      permission: 'active',
-                    },
-                  ],
-                  data: {
-                    bounty_id: bounty_id, //Bounty ID
-                    player: wallet_userAccount.toString(), //User
-                  },
+                  actor: wallet_userAccount.toString(),
+                  permission: 'active',
                 },
               ],
+              data: actionp
+              
+            }]
             },
             {
               blocksBehind: 3,
               expireSeconds: 30,
             },
           );
+
 
           if (results && results.processed) {
 
