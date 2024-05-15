@@ -65,15 +65,15 @@
 
     if(subcat!=null){        
       sel_status=sha256(sel_status + " " + subcat);
-      jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"13","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+      jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bountiesb","index_position":"13","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
     }else if(cat!=null){        
       sel_status=sha256(cat);
-      jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"9","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+      jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bountiesb","index_position":"9","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
     }else{
       if(sel_status=="0"){ //ALL
-        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","limit":1000});
+        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bountiesb","limit":1000});
       }else{ //NEW
-        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bounties","index_position":"2","key_type":"i64","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+        jsonData=JSON.stringify({"json":true,"code":"bountiesgame","scope":"bountiesgame","table":"bountiesb","index_position":"2","key_type":"i64","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
       }
     }
     
