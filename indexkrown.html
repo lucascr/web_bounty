@@ -1,0 +1,413 @@
+
+<!DOCTYPE html>
+<html lang="en-us">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="application/wasm; charset=utf-8">
+        <title>Admin v.1.0.7 </title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script src="jquery-3.7.1.min.js"></script>
+        <script src="waxjs.js"></script>
+        <script src="sha256.js"></script>
+        <script src="https://unpkg.com/anchor-link@3"></script>
+        <script src="https://unpkg.com/anchor-link-browser-transport@3"></script>
+        <link rel="stylesheet" href="notifit.min.css">
+        <script src="notifit.min.js"></script>
+        <link rel="stylesheet" href="menu.css">
+        <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WCMYG5989D"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-WCMYG5989D');
+</script>
+
+<script language="javascript">
+  const contract = "krownbountie";
+  const account = "krownbountie";
+
+  $(document).ready(function() {
+    load_menu();
+    list_bounty("1"); 
+  });
+
+  function load_menu(){
+    getBountySelector();
+    getText();
+  }    
+  function getBountySelector(){
+      $("#divlists_menu").html("");
+      $("#divlists_menu").append("<select id='select_bounty' onChange='list_bounty(this.value);' class='subselect'><option value='0'>-Select-</option><option value='1' selected>New</option><option value='2'>Claimed</option><option value='3'>Approved</option><option value='4'>Completed</option><option value='5'>Reviewed</option><option value='6'>Finished</option><option value='7'>Cancelled</option><option value='0'>All</option></select>");
+  }
+  function getText(){
+    $("#divlists_menu").append("    <label for='site-search'>Project:</label><input type='text' id='f_project' name='f_project'>    <label for='site-search'>Category:</label><input type='text' id='f_cat' name='f_cat'>    <label for='site-search'>Sub-Category:</label><input type='text' id='f_subcat' name='f_subcat'> - Show all <input  type='checkbox' id='show_all' name='show_all'>");
+  }
+
+  function list_bounty(sel_status){
+      getBountyTableHeader();
+      getBountyTableData(sel_status);
+  }
+  function getBountyTableHeader(){
+      $("#divlists_table").html("");
+      $("#divlists_table").append("<table id='table_bounty' class='table_bounty'><thead><tr><th>ID</th><th>Task</th><th>Criteria</th><th>Reward</th><th>Player</th><th>Options</th><th>status</th></tr></thead><tbody></tbody></table>");        
+  }
+  function getBountyTableData (sel_status){
+    
+    // v1/chain/get_table_rows
+    // {"json":true,"code":"bounty","scope":"bounty","table":"bounty","limit":100}
+    waxApiUrl ="https://wax.eosphere.io/";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    var subcat = urlParams.get("subcat");
+    var cat = urlParams.get("cat");
+
+    if(subcat!=null){        
+      sel_status=sha256(sel_status + " " + subcat);
+      jsonData=JSON.stringify({"json":true,"code":"krownbountie","scope":"krownbountie","table":"bountiesd","index_position":"13","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+    }else if(cat!=null){        
+      sel_status=sha256(cat);
+      jsonData=JSON.stringify({"json":true,"code":"krownbountie","scope":"krownbountie","table":"bountiesd","index_position":"9","key_type":"sha256","encode_type":"hex","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+    }else{
+      if(sel_status=="0"){ //ALL
+        jsonData=JSON.stringify({"json":true,"code":"krownbountie","scope":"krownbountie","table":"bountiesd","limit":1000});
+      }else{ //NEW
+        jsonData=JSON.stringify({"json":true,"code":"krownbountie","scope":"krownbountie","table":"bountiesd","index_position":"2","key_type":"i64","upper_bound":sel_status,"lower_bound":sel_status,"limit":1000});
+      }
+    }
+    
+    var hidden_bounties=0;
+    var last_task_id="";
+
+        $.ajax({
+      type: "POST",
+      url: waxApiUrl+"v1/chain/get_table_rows",        
+      data: jsonData,
+      dataType: "json",
+      success: function (data) {
+        //console.log(data.rows);
+        $.each(data.rows, function (index, value) {
+            shards_txt  ="";            
+            if(value.points!=0){
+              shards_txt=" + " + value.points+" SHARDS ";
+            }
+            if(wallet_userAccount!="none" && !$("#show_all").is(":checked") ){              
+              if( value.player==wallet_userAccount || value.player=="" ){                
+                if(last_task_id!=  (value.task_id+value.reward) || value.task_id==""){
+                  last_task_id=(value.task_id+value.reward);
+                  if( value.task_id!=""){
+                    task_id_str="#"+value.task_id+" - ";
+                  }else{
+                    task_id_str="";
+                  }
+                  
+                  $("#table_bounty tbody").append("<tr class='tr_bounty_id_"+value.bounty_id+"'><td>"+value.bounty_id+"</td><td>"+task_id_str+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+shards_txt+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_id_"+value.state_bounty+" bounty_detail_task_id bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+                }else{
+                  hidden_bounties++;
+                }
+                
+              }else{
+                hidden_bounties++;
+              }
+            }else{
+              //console.log(value);
+              $("#table_bounty tbody").append("<tr class='tr_bounty_id_"+value.bounty_id+"'><td>"+value.bounty_id+"</td><td>"+value.task+"</td><td>"+value.criteria+"</td><td>"+value.reward+shards_txt+"</td><td>"+value.player+"</td><td>"+value.deadline.substring(0,10)+" | <a href='#bounty_detail' class='bounty_detail_id_"+value.state_bounty+" bounty_detail_"+sha256(value.player)+"_"+value.state_bounty+"' onclick='bounty_detail(\""+value.state_bounty+"\",\""+value.bounty_id+"\");'></a></td><td>"+statusToString(value.state_bounty)+"</td></tr>");
+            }
+        });
+        if(hidden_bounties>0){
+          $("#table_bounty tbody").append("<tr><td colspan='7'>Hidden bounties: "+hidden_bounties+"</td></tr>");
+        }
+      },
+      error: function (data) {
+        console.log(data);
+      },
+      complete: function (data) {
+        loadOptionsLoggedUser();
+      }
+    });
+  }
+  function btnToString(status){
+    switch (parseInt(status)) {
+      case 1:          return "Claim";          break;
+      case 2:          return "Approve";          break;
+      case 3:          return "Completed";          break;
+      case 4:          return "Reviewed";          break;
+      case 5:          return "Rewarded";          break;
+      case 6:          return "Done";              break;
+      case 7:          return "Cancelled";          break;
+      default:          return "Unknown";          break;
+    }
+  }
+  function statusToString(status){
+    switch (parseInt(status)) {
+      case 1:          return "New Bounty, Not Claimed";          break;
+      case 2:          return "Claimed ";          break;
+      case 3:          return "Approved ";          break;
+      case 4:          return "Completed ";          break;
+      case 5:          return "Reviewed ";          break;
+      case 6:          return "Finished";          break;
+      case 7:          return "Cancelled";          break;
+      default:          return "Unknown";          break;
+    }
+  }
+  
+  
+  const dapp = "login";
+  let login_use = "";
+  let wallet_userAccount="none";
+  let wallet_session=null;
+
+  const wax = new waxjs.WaxJS({
+      rpcEndpoint: 'https://wax.greymass.com'
+  });
+  
+  const transport = new AnchorLinkBrowserTransport();
+  const anchorLink = new AnchorLink({
+        transport,
+        chains: [{
+          chainId: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
+          nodeUrl: 'https://wax.greymass.com',
+        }]
+  });
+  function loginWax(anchor){
+    login_use=anchor;
+    if (anchor) {
+      login_anchor();
+    }else{
+      login_waxjs().then(function(retorno){
+        wallet_userAccount=retorno;
+        $("#autologin").html(wallet_userAccount);
+        hideLoginButton();
+        wallet_session=wax.api;
+      });        
+    }
+  }
+  function login_anchor(){
+      anchorLink.login(dapp).then((result) => {
+        console.log(result);
+        wallet_session = result.session;          
+        console.log(result.session);
+        wallet_userAccount=wallet_session.auth.actor;
+        console.log(wallet_session.auth.actor);
+        $("#autologin").html(String(wallet_userAccount).split("@")[0]);
+        hideLoginButton();
+      });
+  }
+  async function login_waxjs(){
+    try {
+      let userAccount = await wax.login();
+      return userAccount;
+    } catch (e) {
+      $("#autologin").html(e.message);        
+    }
+    return false;
+  }
+  function logout(){
+    wallet_userAccount="none";
+    if(login_use){
+      //anchorLink.logout();
+      session.remove();        
+      $("#autologin").html("logout");
+    }else{
+      wax.logout();
+      $("#autologin").html("logout");
+    }
+      $("#divlogin").show();
+      $("#divlogout").hide();
+  }
+  function hideLoginButton() {
+    $("#divlogin").hide();
+    $("#divlogout").show();
+    list_bounty($("#select_bounty").val());
+    //loadOptionsLoggedUser();
+  }
+  
+  function loadOptionsLoggedUser(){
+    
+    if (login_use) {
+      wallet_userAccount_str=wallet_userAccount.toString()
+    }else{
+      wallet_userAccount_str=wallet_userAccount;
+    }
+
+    console.log("Log: loadOptionsLoggedUse");
+    console.log("Log: wallet_userAccount: "+wallet_userAccount_str);
+
+    if(wallet_userAccount_str!="none"){
+      
+      $(".bounty_detail_task_id").html("Claim");
+
+      console.log("Log: !none");
+
+      if( $("#show_all").is(":checked") ){
+        console.log("Log: true");
+        $(".bounty_detail_id_2").html("Approve");
+        $(".bounty_detail_id_4").html("Review");
+        $(".bounty_detail_id_5").html("Reward");
+        //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
+      }
+      $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_1").html("Claim");
+      $(".bounty_detail_"+sha256(wallet_userAccount.toString())+"_3").html("Complete");
+      //$(".bounty_detail_"+sha256(wallet_userAccount)+"_6").html("Done");
+    }
+    //$("#divlists").html("");
+  }
+
+  function bounty_detail(state_id,bounty_id){
+    console.log("bounty_detail: "+bounty_id);
+    if(state_id=="1"){
+      sign('claimbounty',1,bounty_id,state_id);
+    }else if(state_id=="2"){
+      sign('approveclaim',2,bounty_id,state_id);
+    }else if(state_id=="3"){
+      sign('completed',1,bounty_id,state_id);
+    }else if(state_id=="4"){
+      sign('review',2,bounty_id,state_id);
+    }else if(state_id=="5"){
+      sign('paybounty',3,bounty_id,state_id);
+    }
+  }
+
+  async function sign(state_str,user_type,bounty_id,state_id) {
+    if (login_use) {
+      //wallet_userAccount.toString();
+      try {
+        const action = {
+          account: 'krownbountie',
+          name: state_str,
+          authorization: [{
+              actor: String(wallet_session.auth.toString()).split("@")[0],
+              permission: String(wallet_session.auth.toString()).split("@")[1]
+          }],
+          data: {
+                bounty_id: bounty_id,
+          }
+        };
+
+        if (user_type === 2) {
+          action.data.approver = String(wallet_session.auth.toString()).split("@")[0];
+        }else if (user_type === 3) {
+          action.data.issuer = String(wallet_session.auth.toString()).split("@")[0];          
+        } else {
+          action.data.player = String(wallet_session.auth.toString()).split("@")[0];
+        }
+
+        //console.log(action);
+            
+        anchorLink.transact({action})
+              .then((result) => {
+                  console.log(`<h1>Thank you ${ result.signer.actor }!</h1>`);
+                  //alert("TX: "+ result.processed.id);
+                  $(".tr_bounty_id_"+bounty_id).css("background-color", "lightgreen")
+                  var myNotification = notif({
+                    'type': 'success',
+                    'msg': 'TX Processed: ' +result.processed.id + ' <a href="https://waxblock.io/transaction/' +result.processed.id + '" target="_blank">Open TX</a>'
+                  })
+
+              })
+
+            //return {transaction_id: result.processed.id};
+
+        } catch(e) {
+            if (e.hasOwnProperty("error") && e.error.hasOwnProperty("details") && Array.isArray(e.error.details) && e.error.details.length > 0) {
+                throw ({message: e.error.details[0].message});
+            } else {
+                throw ({message: e.message});
+            }
+        }
+    }else{
+      if(!wax.api) {
+          alert('* Login first *');
+      }
+      try {
+        this.waitingResults = true;
+        
+        
+        const actionp = {
+            bounty_id: bounty_id, //Bounty ID               
+          }
+        if (user_type === 2) {
+            actionp.approver = String(wallet_userAccount.toString()).split("@")[0];
+          }else if (user_type === 3) {
+            actionp.issuer = String(wallet_userAccount.toString()).split("@")[0];          
+          } else {
+            actionp.player = String(wallet_userAccount.toString()).split("@")[0];
+          }
+
+          //console.log(actionp);
+          
+          const results = await wax.api.transact({
+            actions: [{
+              account: 'krownbountie',
+              name: state_str,
+              authorization: [
+                {
+                  actor: wallet_userAccount.toString(),
+                  permission: 'active',
+                },
+              ],
+              data: actionp
+              
+            }]
+            },
+            {
+              blocksBehind: 3,
+              expireSeconds: 30,
+            },
+          );
+
+
+          if (results && results.processed) {
+
+            $(".tr_bounty_id_"+bounty_id).css("background-color", "lightgreen")
+            var myNotification = notif({
+              'type': 'success',
+              'msg': 'TX Processed: ' +results.processed.id + ' <a href="https://waxblock.io/transaction/' +results.processed.id + '" target="_blank">Open TX</a>'
+            })
+          }
+
+      } catch (error) {
+        console.error(error);
+        this.error = error.message;
+        alert(error.message);
+      }
+
+    }
+  }
+  
+  </script>
+</head>
+<body>
+    <img src="krownlogo.jpg" alt="Krown Bountie" width="70">
+      <p id="autologin"></p>
+      <div id="divlogin">
+        <button id="login" onclick="loginWax(false)">WAX Login</button>
+        <button id="login" onclick="loginWax(true)">Anchor Login</button>
+      </div>
+      <div id="divlogout" style="display:none"><button id="loginout" onclick=logout()>Logout</button></div>
+
+    <div id="divlists">
+      <section>
+      <div class="navbar">
+        <div class="subnav">
+        <button class="subnavbtn">Bounties <i class="fa fa-caret-down"></i></button>
+          <div class="subnav-content">
+            <a href="#link1">Add a Bounty</a>
+            <a href="#list_bounty" id="list_bounty" onclick="list_bounty();">List Bounties</a>
+          </div>
+        </div>
+        <div class="subnav">
+        <button class="subnavbtn">Admin <i class="fa fa-caret-down"></i></button>
+          <div class="subnav-content">
+            <a href="#company">Add Aproover</a>
+            <a href="#team">Remove Aprover</a>
+          </div>
+        </div>
+      </div>
+      </section>
+      <div id="divlists_menu"></div>
+      <div id="divlists_table"></div>
+    </div>
+    </body>
+    </html>
